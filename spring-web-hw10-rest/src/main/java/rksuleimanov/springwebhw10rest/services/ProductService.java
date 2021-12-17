@@ -6,12 +6,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import rksuleimanov.springwebhw10rest.converters.ProductConverter;
 import rksuleimanov.springwebhw10rest.dto.ProductDto;
 import rksuleimanov.springwebhw10rest.entities.Product;
 import rksuleimanov.springwebhw10rest.exceptions.ResourceNotFoundException;
 import rksuleimanov.springwebhw10rest.repositories.ProductRepository;
 import rksuleimanov.springwebhw10rest.repositories.specifications.ProductSpecification;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +22,8 @@ import java.util.Optional;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final ProductConverter productConverter;
+    private final CartService cartService;
 
     public Page<Product> findAll(Integer page, Integer minPrice, Integer maxPrice, String titlePart) {
         Specification<Product> spec = Specification.where(null);
@@ -32,7 +36,7 @@ public class ProductService {
         if (titlePart != null) {
             spec = spec.and(ProductSpecification.titleLike(titlePart));
         }
-        return productRepository.findAll(spec, PageRequest.of(page - 1, 10));
+        return (productRepository.findAll(spec, PageRequest.of(page - 1, 10)));
     }
 
 //    @Transactional
@@ -64,7 +68,18 @@ public class ProductService {
         Product product = productRepository.findById(productDto.getId()).orElseThrow(() -> new ResourceNotFoundException("Unable to update product. Not found in base id: " + productDto.getId()));
         product.setTitle(productDto.getTitle());
         product.setPrice(productDto.getPrice());
-        return product;
+        return productConverter.dtoToEntity(productDto);
     }
+
+    public List<Product> addToCart(Product product) {
+        productRepository.findById(product.getId()).orElseThrow(() -> new ResourceNotFoundException("Unable to add product in cart. Not found in base id: " + product.getId()));
+        cartService.addToCart(product);
+        return cartService.getCart();
+    }
+
+    public List<Product> showCart() {
+        return cartService.getCart();
+    }
+
 
 }

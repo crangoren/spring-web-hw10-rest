@@ -9,7 +9,9 @@ import rksuleimanov.springwebhw10rest.entities.Product;
 import rksuleimanov.springwebhw10rest.exceptions.ResourceNotFoundException;
 import rksuleimanov.springwebhw10rest.services.ProductService;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/products")
@@ -24,14 +26,14 @@ public class ProductController {
             @RequestParam(name = "p", defaultValue = "1") Integer page,
             @RequestParam(name = "min_price", required = false) Integer minPrice,
             @RequestParam(name = "max_price", required = false) Integer maxPrice,
-            @RequestParam(name = "name_part", required = false) String titlePart
+            @RequestParam(name = "title_part", required = false) String titlePart
 
     ){
         if (page < 1) {
             page = 1;
         }
         return productService.findAll(page, minPrice, maxPrice, titlePart).map(
-                productConverter::entityToDto);
+                p -> productConverter.entityToDto(p));
     }
 
     @GetMapping("/{id}")
@@ -64,5 +66,10 @@ public class ProductController {
         return productConverter.entityToDto(product);
     }
 
-
+    public List<ProductDto> addToCart(@RequestParam Long id) {
+        Product product = productService.findById(id).orElseThrow(() -> new ResourceNotFoundException("Product not found " + id));
+        return productService.addToCart(product).stream().map(
+                p -> productConverter.entityToDto(p)
+        ).collect(Collectors.toUnmodifiableList());
+    }
 }
